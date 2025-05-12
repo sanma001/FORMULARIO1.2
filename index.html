@@ -490,11 +490,11 @@
     })
   );
 
-  // 4) Guardamos local y en consolidadoDatos
-  consolidadoDatos = consolidadoDatos.concat(filas);
+   // 4) Guardamos local y en consolidadoDatos
+   consolidadoDatos = consolidadoDatos.concat(filas);
 
-  // 5) Enviamos al servidor
-  try {
+   // 5) Enviamos al servidor
+   try {
     await enviarAlServidor(filas);
   } catch (e) {
     console.error('Error enviando a la hoja:', e);
