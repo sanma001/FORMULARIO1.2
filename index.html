@@ -163,27 +163,34 @@
   </div>
 <!-- Apps Script: lectura/escritura en Google Sheets -->
 <script>
-// URL de tu Apps Script desplegado
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzZJvd2YpfIffHI3W27yvFQECjt6NkUnRHcqbBZYFS1LmWILdgbNl6BWLieSvbSk7Mr/exec';
+ // URL de tu Apps Script desplegado
+ const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzZJvd2YpfIffHI3W27yvFQECjt6NkUnRHcqbBZYFS1LmWILdgbNl6BWLieSvbSk7Mr/exec';
 
-// Envía filas nuevas al Google Sheet
-window.enviarAlServidor = async (filas) => {
+ // Envía filas nuevas al Google Sheet
+ window.enviarAlServidor = async (filas) => {
   for (const fila of filas) {
-    await fetch(SHEET_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(fila)
-    });
+    try {
+      // Eliminamos las cabeceras para evitar preflight CORS
+      const res = await fetch(SHEET_URL, {
+        method: 'POST',
+        body: JSON.stringify(fila)
+      });
+      console.log('POST status:', res.status);
+      console.log('POST response:', await res.text());
+    } catch (err) {
+      console.error('Error en POST:', err);
+    }
   }
 };
 
-// Carga todo el consolidado desde el Google Sheet
-window.cargarConsolidadoOnline = async (callback) => {
+
+ // Carga todo el consolidado desde el Google Sheet
+ window.cargarConsolidadoOnline = async (callback) => {
   const res = await fetch(SHEET_URL + '?cacheBust=' + Date.now());
   const data = await res.json();  // array de arrays
   callback(data);
-};
-</script>
+ };
+ </script>
   <script>
     const clavesDepartamento = {
       "MECANICA":"meca123","ELÉCTRICA":"elect789",
