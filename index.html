@@ -432,69 +432,68 @@
 }
 
 
-   async function finalizarGuardado() {
-     const ts = new Date().toLocaleString();
+     async function finalizarGuardado() {
+       const ts = new Date().toLocaleString();
 
-     // 1) Recolectamos cada fila del formulario
-     const filas = await Promise.all(
+      // 1) Recolectamos cada fila del formulario
+      const filas = await Promise.all(
        Array.from(document.querySelectorAll('#cuerpoTabla tr')).map(async tr => {
          const vals = [];
 
          // 2) Para cada celda de la fila, extraemos su valor
-         Array.from(tr.cells).forEach(td => {
-           // select (programa, modalidad, tipo grupo…)
-           const sel = td.querySelector('select');
-           if (sel) {
-             vals.push(sel.value);
-             return;
+         for (const td of tr.cells) {
+         // select
+         const sel = td.querySelector('select');
+         if (sel) {
+          vals.push(sel.value);
+          continue;
+        }
+
+        // input date
+        const dateInp = td.querySelector('input[type="date"]');
+        if (dateInp) {
+          vals.push(dateInp.value);
+          continue;
+        }
+
+        // input text
+        const txtInp = td.querySelector('input[type="text"]');
+        if (txtInp) {
+          vals.push(txtInp.value);
+          continue;
+        }
+
+        // input file: convertimos a Base64
+        const fileInp = td.querySelector('input[type="file"]');
+        if (fileInp) {
+          if (fileInp.files[0]) {
+            const file = fileInp.files[0];
+            const dataURL = await new Promise(res => {
+              const reader = new FileReader();
+              reader.onload = e => res(e.target.result);
+              reader.readAsDataURL(file);
+            });
+            vals.push({ name: file.name, data: dataURL });
+          } else {
+            vals.push('');
           }
+          continue;
+        }
 
-          // input date (fecha inicial / final)
-           const dateInp = td.querySelector('input[type="date"]');
-           if (dateInp) {
-             vals.push(dateInp.value);
-             return;
-          }
+        // fallback: texto plano
+        vals.push(td.textContent.trim());
+      }
 
-           // input text
-           const txtInp = td.querySelector('input[type="text"]');
-           if (txtInp) {
-             vals.push(txtInp.value);
-             return;
-          }
-
-           // input file: convertimos a Base64
-           const fileInp = td.querySelector('input[type="file"]');
-           if (fileInp) {
-             if (fileInp.files[0]) {
-               const file = fileInp.files[0];
-               const dataURL = await new Promise(res => {
-                 const reader = new FileReader();
-                 reader.onload = e => res(e.target.result);
-                 reader.readAsDataURL(file);
-               });
-              // reemplazamos el valor por un objeto con nombre y data
-              vals.push({ name: file.name, data: dataURL });
-            } else {
-              vals.push('');
-            }
-            return;
-          }
-
-          // fallback: texto plano
-          vals.push(td.textContent.trim());
-        });
-
-        // 3) Añadimos la marca de tiempo al final
-        vals.push(ts);
-        return vals;
-     })
+      // 3) Añadimos la marca de tiempo al final
+      vals.push(ts);
+      return vals;
+    })
   );
 
-  // 4) Actualizamos tanto la memoria local como el arreglo global
+  // 4) Guardamos local y en consolidadoDatos
   consolidadoDatos = consolidadoDatos.concat(filas);
 
-  // 5) Enviamos todo al servidor
+  // 5) Enviamos al servidor
   try {
     await enviarAlServidor(filas);
   } catch (e) {
@@ -511,6 +510,7 @@
   // 7) Confirmación al usuario
   alert('Datos enviados al consolidado.');
 }
+
 
 
     function renderConsolidado(){
