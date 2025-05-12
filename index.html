@@ -100,7 +100,7 @@
         <option value="ELÉCTRICA">ELÉCTRICA</option>
         <option value="SISTEMAS DIGITALES">SISTEMAS DIGITALES</option>
         <option value="DISEÑO">DISEÑO</option>
-        <option value="PRODUCCIÓN">PRODUCCIÓN</option>
+        <option value="PRODUCCIÓN">PRODUCCIÓN</option><th>Cv</th>
       </select>
 
       <table id="tablaFormulario">
@@ -108,7 +108,8 @@
           <tr>
             <th>Departamento</th><th>Programa</th><th>Semestre</th>
             <th>Modalidad</th><th>Asignatura</th><th>Día</th>
-            <th>Horario</th><th>Intensidad</th><th>Docente</th>
+            <th>Horario</th> <th>Fecha inicial</th><th>Fecha final</th><th>Tipo de grupo</th><th>Intensidad</th><th>Docente</th><th>Cv</th>
+           
           </tr>
         </thead>
         <tbody id="cuerpoTabla"></tbody>
@@ -126,7 +127,7 @@
           <tr>
             <th>Departamento</th><th>Programa</th><th>Semestre</th>
             <th>Modalidad</th><th>Asignatura</th><th>Día</th>
-            <th>Horario</th><th>Intensidad</th><th>Docente</th><th>Eliminar</th>
+            <th>Horario</th> <th>Fecha inicial</th><th>Fecha final</th><th>Tipo de grupo</th><th>Intensidad</th><th>Docente</th><th>Cv</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -141,7 +142,7 @@
           <tr>
             <th>Departamento</th><th>Programa</th><th>Semestre</th>
             <th>Modalidad</th><th>Asignatura</th><th>Día</th>
-            <th>Horario</th><th>Intensidad</th><th>Docente</th><th>Fecha/Hora</th>
+            <th>Horario</th> <th>Fecha inicial</th><th>Fecha final</th><th>Tipo de grupo</th><th>Intensidad</th><th>Docente</th><th>Cv</th><th>Fecha/Hora</th>
           </tr>
           <tr id="filtros">
             <th><input type="text" oninput="filtrar(0)"></th>
@@ -154,6 +155,10 @@
             <th><input type="text" oninput="filtrar(7)"></th>
             <th><input type="text" oninput="filtrar(8)"></th>
             <th><input type="text" oninput="filtrar(9)"></th>
+            <th><input type="text" oninput="filtrar(10)"></th>
+            <th><input type="text" oninput="filtrar(11)"></th>
+            <th><input type="text" oninput="filtrar(12)"></th>
+            <th><input type="text" oninput="filtrar(13)"></th>
           </tr>
         </thead>
         <tbody id="cuerpoConsolidado"></tbody>
@@ -164,7 +169,7 @@
 <!-- Apps Script: lectura/escritura en Google Sheets -->
 <script>
  // URL de tu Apps Script desplegado
- const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzZJvd2YpfIffHI3W27yvFQECjt6NkUnRHcqbBZYFS1LmWILdgbNl6BWLieSvbSk7Mr/exec';
+ const SHEET_URL = 'https://script.google.com/macros/s/AKfycbyKR3fYsuDaEa3-P3rk1CiiU1aywtCzsRlIdJ5FPCzgs2F9_ubzQGLhEpQLMvRie5cc/exec';
 
  // Envía filas nuevas al Google Sheet
  window.enviarAlServidor = async (filas) => {
@@ -329,18 +334,29 @@
           <select class="diaSelect">
             <option>-- Selecciona --</option>
             <option>Lunes</option><option>Martes</option><option>Miércoles</option>
-            <option>Jueves</option><option>Viernes</option><option>Sábado</option>
+            <option>Jueves</option><option>Viernes</option><option>Sábado</option><option>Domingo</option>
           </select>
         </td>
         <td>
          <select class="horarioSelect"><option>-- Selecciona --</option><option>6-8 am</option><option>8-10 am</option><option>10-12 pm</option>
          <option>12-2 pm</option><option>2-4 pm</option><option>4-6 pm</option><option>6-8 pm</option><option>8-10 pm</option>
          </select>
-
+          <td><input type="date" class="fechaInicial"></td>
+         <td><input type="date" class="fechaFinal"></td>
+         <td>
+           <select class="tipoGrupo">
+             <option>-- Selecciona --</option>
+             <option>Opción 1</option>
+             <option>Opción 2</option>
+             <option>Opción 3</option>
+           </select>
+         </td>
+        
 
         </td>
         <td><input type="text" placeholder="p.ej. 4 horas"></td>
         <td><input type="text" placeholder="Nombre docente"></td>
+        <td><input type="file" class="archivoInput"></td>
       `;
       document.getElementById("cuerpoTabla").appendChild(tr);
       const ps=tr.querySelector('.programaSelect'),
@@ -356,47 +372,147 @@
         (asignaturasPorSemestre[ss.value]||[]).forEach(o=>as.appendChild(new Option(o,o)));
       };
     }
-    function guardarDatos(){
-      datosGuardados=[];const body=document.querySelector("#tablaGuardados tbody");body.innerHTML="";
-      document.querySelectorAll("#cuerpoTabla tr").forEach(f=>{
-        const vals=Array.from(f.cells).map(td=>{
-          const s=td.querySelector("select"),i=td.querySelector("input");
-          return s?s.value:i?i.value:td.textContent;
-        });
-        if(vals.some(v=>v)){
-          datosGuardados.push(vals);
-          const tr=document.createElement("tr");
-          vals.forEach(v=>tr.appendChild(Object.assign(document.createElement("td"),{textContent:v})));
-          const tdAcc=document.createElement("td");
-          const btn=document.createElement("button");
-          btn.textContent="✖";btn.classList.add("btnEliminar");btn.onclick=()=>tr.remove();
-          tdAcc.appendChild(btn);tr.appendChild(tdAcc);
-          body.appendChild(tr);
-        }
+    function guardarDatos() {
+     datosGuardados = [];
+     const body = document.querySelector("#tablaGuardados tbody");
+     body.innerHTML = "";
+
+     document.querySelectorAll("#cuerpoTabla tr").forEach(fila => {
+       // Recorremos cada celda y extraemos valor según su tipo
+       const vals = Array.from(fila.cells).map(td => {
+       // select (programa, modalidad, tipo grupo…)
+       const sel = td.querySelector("select");
+       if (sel) return sel.value;
+
+       // input fecha (fecha inicial o final)
+       const dateInp = td.querySelector("input[type='date']");
+       if (dateInp) return dateInp.value;
+
+       // input texto (intensidad, docente…)
+       const txtInp = td.querySelector("input[type='text']");
+       if (txtInp) return txtInp.value;
+
+       // input archivo
+       const fileInp = td.querySelector("input[type='file']");
+       if (fileInp) {
+        return fileInp.files[0] ? fileInp.files[0].name : "";
+       }
+
+       // fallback: cualquier otro texto en la celda
+       return td.textContent.trim();
+     });
+
+     // Solo guardamos filas con al menos un valor
+     if (vals.some(v => v)) {
+      datosGuardados.push(vals);
+
+      // También las mostramos en la tabla de "Datos guardados"
+      const tr = document.createElement("tr");
+      vals.forEach(v => {
+        const td = document.createElement("td");
+        td.textContent = v;
+        tr.appendChild(td);
       });
-      document.getElementById("tablaGuardados").style.display="table";
-      document.getElementById("btnFinalizar").disabled=false;
+
+      // Botón para eliminar esa fila
+      const tdAcc = document.createElement("td");
+      const btn = document.createElement("button");
+      btn.textContent = "✖";
+      btn.classList.add("btnEliminar");
+      btn.onclick = () => tr.remove();
+      tdAcc.appendChild(btn);
+      tr.appendChild(tdAcc);
+
+      body.appendChild(tr);
     }
-    async function finalizarGuardado() {
-     const ts    = new Date().toLocaleString();
-     const filas = datosGuardados.map(r => [...r, ts]);
-     consolidadoDatos = consolidadoDatos.concat(filas);
+  });
 
-     try {
-     await enviarAlServidor(filas);
-     } catch (e) {
-     console.error(e);
-     alert('Error enviando a la hoja. Revisa la consola.');
-     }
-
-     // limpiamos el formulario…
-      document.getElementById('cuerpoTabla').innerHTML = '';
-     document.getElementById('tablaGuardados').style.display = 'none';
-     document.getElementById('departamento').value = '';
-     document.getElementById('btnFinalizar').disabled = true;
-
-     alert('Datos enviados al consolidado.');
+  document.getElementById("tablaGuardados").style.display = "table";
+  document.getElementById("btnFinalizar").disabled = false;
 }
+
+
+   async function finalizarGuardado() {
+     const ts = new Date().toLocaleString();
+
+     // 1) Recolectamos cada fila del formulario
+     const filas = await Promise.all(
+       Array.from(document.querySelectorAll('#cuerpoTabla tr')).map(async tr => {
+         const vals = [];
+
+         // 2) Para cada celda de la fila, extraemos su valor
+         Array.from(tr.cells).forEach(td => {
+           // select (programa, modalidad, tipo grupo…)
+           const sel = td.querySelector('select');
+           if (sel) {
+             vals.push(sel.value);
+             return;
+          }
+
+          // input date (fecha inicial / final)
+           const dateInp = td.querySelector('input[type="date"]');
+           if (dateInp) {
+             vals.push(dateInp.value);
+             return;
+          }
+
+           // input text
+           const txtInp = td.querySelector('input[type="text"]');
+           if (txtInp) {
+             vals.push(txtInp.value);
+             return;
+          }
+
+           // input file: convertimos a Base64
+           const fileInp = td.querySelector('input[type="file"]');
+           if (fileInp) {
+             if (fileInp.files[0]) {
+               const file = fileInp.files[0];
+               const dataURL = await new Promise(res => {
+                 const reader = new FileReader();
+                 reader.onload = e => res(e.target.result);
+                 reader.readAsDataURL(file);
+               });
+              // reemplazamos el valor por un objeto con nombre y data
+              vals.push({ name: file.name, data: dataURL });
+            } else {
+              vals.push('');
+            }
+            return;
+          }
+
+          // fallback: texto plano
+          vals.push(td.textContent.trim());
+        });
+
+        // 3) Añadimos la marca de tiempo al final
+        vals.push(ts);
+        return vals;
+     })
+  );
+
+  // 4) Actualizamos tanto la memoria local como el arreglo global
+  consolidadoDatos = consolidadoDatos.concat(filas);
+
+  // 5) Enviamos todo al servidor
+  try {
+    await enviarAlServidor(filas);
+  } catch (e) {
+    console.error('Error enviando a la hoja:', e);
+    alert('Error enviando a la hoja. Revisa la consola.');
+  }
+
+  // 6) Limpiamos el formulario
+  document.getElementById('cuerpoTabla').innerHTML = '';
+  document.getElementById('tablaGuardados').style.display = 'none';
+  document.getElementById('departamento').value = '';
+  document.getElementById('btnFinalizar').disabled = true;
+
+  // 7) Confirmación al usuario
+  alert('Datos enviados al consolidado.');
+}
+
+
     function renderConsolidado(){
       const body=document.getElementById("cuerpoConsolidado");body.innerHTML="";
       consolidadoDatos.forEach(vals=>{
