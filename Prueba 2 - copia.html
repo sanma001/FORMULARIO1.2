@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Formulario por Departamento</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; padding:0; font-family:'Montserrat',sans-serif;
+      background: linear-gradient(135deg,#e3f2fd,#ffffff); color:#333;
+    }
+    .container {
+      max-width:1800px; margin:40px auto; padding:20px;
+      background:#fff; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);
+    }
+    h2 { margin-top:0; font-weight:500; color:#102a43;
+      border-bottom:2px solid #40a8c4; padding-bottom:8px;
+    }
+    .nav-buttons { display:flex; gap:10px; margin-bottom:20px; }
+    .nav-buttons button {
+      flex:1; padding:10px 0; font-weight:500; border:none; border-radius:8px;
+      background:#20778f; color:#fff; cursor:pointer; transition:background .3s;
+    }
+    .nav-buttons button:hover { background:#68a7c0; }
+    select,input[type="text"] {
+      width:100%; padding:8px; margin-bottom:12px;
+      border:1px solid #bcccdc; border-radius:6px; font-size:14px;
+      transition:border-color .2s;
+    }
+    select:focus,input[type="text"]:focus { outline:none; border-color:#40a8c4; }
+    table {
+      width:100%; border-collapse:collapse; margin-top:12px;
+    }
+    th,td { padding:10px; text-align:center; }
+    thead { background:#1f618d; color:#fff; }
+    tbody tr:nth-child(even) { background:#edf6f8; }
+    tbody tr:hover { background:#d0e0f2; }
+    .button-group { display:flex; gap:12px; flex-wrap:wrap; margin-top: 15px;}
+    .button-group button {
+      padding:10px 16px; font-size:14px; font-weight:500;
+      border:none; border-radius:6px; cursor:pointer;
+      transition:opacity .2s;
+    }
+    .add { background:#36b37e; color:#fff; }
+    .save { background:#ffab00; color:#fff; }
+    .finish { background:#00b8d9; color:#fff; }
+    .finish:disabled { opacity:.5; cursor:not-allowed; }
+    .btnEliminar {
+      background:#ff5630; color:#fff; padding:6px 10px;
+      border-radius:50%; font-weight:bold; border:none; cursor:pointer;
+    }
+    .btnExportar {
+      background:#0052cc; color:#fff; margin-top:20px;
+      padding:10px 16px; border:none; border-radius:6px; cursor:pointer;
+    }
+    /* ocultos al iniciar */
+    #formulario,#tablaGuardados,#segundaSeccion { display:none; }
+     #tablaFormulario td input {
+     width: 100%;
+     box-sizing: border-box;
+     max-width: 100%;
+  }
+     #tablaConsolidado td input {
+      width: 100%;
+      box-sizing: border-box;
+      max-width: 100%;
+    }
+     #tablaConsolidado th:last-child,
+     #tablaConsolidado td:last-child {
+      width: 120px;  /* ajústalo al ancho que necesites */
+    }
+     #tablaConsolidado input[type="text"] {
+     width: 100%;
+     box-sizing: border-box;
+      max-width: 100%;
+     padding: 6px;
+     font-size: 13px;
+}
+
+     /* Asegúrate de que la tabla no se expanda más allá del contenedor */
+     #tablaConsolidado {
+     table-layout: fixed;
+     word-wrap: break-word;
+}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav-buttons">
+      <button onclick="mostrarSeccion('formulario')">Formulario</button>
+      <button onclick="pedirPasswordConsolidado()">Consolidado</button>
+    </div>
+
+    <!-- FORMULARIO -->
+    <div id="formulario">
+      <h2>Formulario</h2>
+      <label for="departamento">Departamento:</label>
+      <select id="departamento" onchange="validarDepartamento()">
+        <option value="">-- Selecciona --</option>
+        <option value="MECANICA">MECANICA</option>
+        <option value="ELÉCTRICA">ELÉCTRICA</option>
+        <option value="SISTEMAS DIGITALES">SISTEMAS DIGITALES</option>
+        <option value="DISEÑO">DISEÑO</option>
+        <option value="PRODUCCIÓN">PRODUCCIÓN</option>
+      </select>
+
+      <table id="tablaFormulario">
+        <thead>
+          <tr>
+            <th>Departamento</th><th>Programa</th><th>Semestre</th>
+            <th>Modalidad</th><th>Asignatura</th><th>Día</th>
+            <th>Horario</th><th>Intensidad</th><th>Docente</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpoTabla"></tbody>
+      </table>
+
+      <div class="button-group">
+        <button class="add" onclick="agregarFila()">+ Agregar fila</button>
+        <button class="save" onclick="guardarDatos()">💾 Guardar datos</button>
+        <button id="btnFinalizar" class="finish" onclick="finalizarGuardado()" disabled>FINALIZAR</button>
+      </div>
+
+      <h2>Datos guardados</h2>
+      <table id="tablaGuardados">
+        <thead>
+          <tr>
+            <th>Departamento</th><th>Programa</th><th>Semestre</th>
+            <th>Modalidad</th><th>Asignatura</th><th>Día</th>
+            <th>Horario</th><th>Intensidad</th><th>Docente</th><th>Eliminar</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- CONSOLIDADO -->
+    <div id="segundaSeccion">
+      <h2>Consolidado</h2>
+      <table id="tablaConsolidado">
+        <thead>
+          <tr>
+            <th>Departamento</th><th>Programa</th><th>Semestre</th>
+            <th>Modalidad</th><th>Asignatura</th><th>Día</th>
+            <th>Horario</th><th>Intensidad</th><th>Docente</th><th>Fecha/Hora</th>
+          </tr>
+          <tr id="filtros">
+            <th><input type="text" oninput="filtrar(0)"></th>
+            <th><input type="text" oninput="filtrar(1)"></th>
+            <th><input type="text" oninput="filtrar(2)"></th>
+            <th><input type="text" oninput="filtrar(3)"></th>
+            <th><input type="text" oninput="filtrar(4)"></th>
+            <th><input type="text" oninput="filtrar(5)"></th>
+            <th><input type="text" oninput="filtrar(6)"></th>
+            <th><input type="text" oninput="filtrar(7)"></th>
+            <th><input type="text" oninput="filtrar(8)"></th>
+            <th><input type="text" oninput="filtrar(9)"></th>
+          </tr>
+        </thead>
+        <tbody id="cuerpoConsolidado"></tbody>
+      </table>
+      <button class="btnExportar" onclick="exportTableToExcel('tablaConsolidado','Consolidado')">📥 Exportar a Excel</button>
+    </div>
+  </div>
+<!-- Apps Script: lectura/escritura en Google Sheets -->
+<script>
+// URL de tu Apps Script desplegado
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzZJvd2YpfIffHI3W27yvFQECjt6NkUnRHcqbBZYFS1LmWILdgbNl6BWLieSvbSk7Mr/exec';
+
+// Envía filas nuevas al Google Sheet
+window.enviarAlServidor = async (filas) => {
+  for (const fila of filas) {
+    await fetch(SHEET_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fila)
+    });
+  }
+};
+
+// Carga todo el consolidado desde el Google Sheet
+window.cargarConsolidadoOnline = async (callback) => {
+  const res = await fetch(SHEET_URL + '?cacheBust=' + Date.now());
+  const data = await res.json();  // array de arrays
+  callback(data);
+};
+</script>
+  <script>
+    const clavesDepartamento = {
+      "MECANICA":"meca123","ELÉCTRICA":"elect789",
+      "SISTEMAS DIGITALES":"sisdi456","DISEÑO":"dise012","PRODUCCIÓN":"prod345"
+    };
+    const programasPorDepto = {
+      "MECANICA":[
+        "TECNOLOGIA EN MECANICA AUTOMOTRIZ",
+        "TECNOLOGIA EN MECANICA INDUSTRIAL",
+        "INGENIERIA MECANICA",
+        "TECNOLOGIA EN GESTION DEL MANTENIMIENTO AERONAUTICO",
+        "INGENIERIA DE MATERIALES"
+      ],
+      "ELÉCTRICA":[
+        "INGENIERIA ELECTRICA",
+        "TECNOLOGIA ELECTRICA",
+        "TECNOLOGIA EN SISTEMAS MECATRONICOS",
+        "TECNOLOGIA EN ELECTRONICA INDUSTRIAL",
+        "TECNOLOGIA EN SUPERVISION DE SISTEMAS DE GENERACION Y DISTRIBUCION DE ENERGIA ELECTRICA"
+      ],
+      "SISTEMAS DIGITALES":["TECNICA PROFESIONAL EN FABRICACION DIGITAL E IMPRESIÓN 3D",
+     "INGENIERIA DE SOFTWARE",
+     "TECNOLOGIA EN DESARROLLO DE SOFTWARE",
+     "TECNOLOGIA EN SISTEMAS ELECTROMECANICOS" ],
+     "DISEÑO":[
+     "PROFESIONAL EN DISEÑO DE VESTUARIO",
+     "PROFESIONAL EN GESTION DEL DISEÑO",
+     "PROFESIONAL EN DISEÑO GRAFICO",
+     "TECNOLOGIA EN DISEÑO Y PRODUCCION GRAFICA",
+     "TECNOLOGIA EN ANIMACION DIGITAL",
+     "TECNOLOGIA EN DISEÑO Y PRODUCCION DE VESTUARIO"],
+     "PRODUCCIÓN":[
+     "INGENIERIA ADMINISTRATIVA",
+     "INGENIERIA INDUSTRIAL",
+     "INGENIERIA LOGISTICA",
+     "TECNOLOGIA EN PRODUCCION INDUSTRIAL",
+     "TECNOLOGIA EN GESTION LOGISTICA"]
+    };
+    const modalidadesPorPrograma = {
+      "TECNOLOGIA EN MECANICA AUTOMOTRIZ":["Presencial","Distancia"],
+      "TECNOLOGIA EN MECANICA INDUSTRIAL":["Presencial"],
+      "INGENIERIA MECANICA":["Presencial"],
+      "TECNOLOGIA EN GESTION DEL MANTENIMIENTO AERONAUTICO":["Presencial"],
+      "INGENIERIA DE MATERIALES":["Presencial"],
+      "INGENIERIA ELECTRICA":["Presencial"],
+      "TECNOLOGIA ELECTRICA":["Presencial"],
+      "TECNOLOGIA EN SISTEMAS MECATRONICOS":["Presencial", "Distancia"],
+      "TECNOLOGIA EN ELECTRONICA INDUSTRIAL":["Presencial"],
+      "TECNOLOGIA EN SUPERVISION DE SISTEMAS DE GENERACION Y DISTRIBUCION DE ENERGIA ELECTRICA":["Distancia"],
+      "TECNICA PROFESIONAL EN FABRICACION DIGITAL E IMPRESIÓN 3D":["Presencial"],
+      "INGENIERIA DE SOFTWARE":["Presencial"],
+      "TECNOLOGIA EN DESARROLLO DE SOFTWARE":["Presencial","Virtual"],
+      "TECNOLOGIA EN SISTEMAS ELECTROMECANICOS":["Presencial"],
+      "INGENIERIA ADMINISTRATIVA":["Presencial"],
+      "INGENIERIA INDUSTRIAL":["Presencial"],
+      "INGENIERIA LOGISTICA":["Presencial"],
+      "TECNOLOGIA EN PRODUCCION INDUSTRIAL":["Presencial"],
+      "TECNOLOGIA EN GESTION LOGISTICA":["Presencial","Virtual"],
+      "PROFESIONAL EN DISEÑO DE VESTUARIO":["Presencial"],
+      "PROFESIONAL EN GESTION DEL DISEÑO":["Presencial"],
+      "PROFESIONAL EN DISEÑO GRAFICO":["Presencial"],     
+      "TECNOLOGIA EN DISEÑO Y PRODUCCION GRAFICA":["Presencial"],
+      "TECNOLOGIA EN ANIMACION DIGITAL":["Presencial"],
+      "TECNOLOGIA EN DISEÑO Y PRODUCCION DE VESTUARIO":["Presencial"]
+    };
+    const asignaturasPorSemestre = {
+      "Semestre único":[
+      "Razonamiento matemático y analítico",
+      "Ciencia, tecnología y desarrollo",
+      "Lenguaje y cultura",
+      "Pensamiento creativo",
+      "Inglés I"],
+      "Regular - nivel 2":[
+      "Cálculo diferencial",
+      "Álgebra lineal", 
+      "Geometría vectorial y analítica",
+      "Teoría de la agencia", 
+      "TIC/competencias digitales", "Inglés II"], 
+      "Regular - nivel 3":[" Cálculo integral ", "Física mecánica", "Química general", "Constitución, ciudadanía y paz", "Inglés III"],
+      "Regular - nivel 4":["Ecuaciones diferenciales", "Física de electricidad y magnetismo", "Estadística descriptiva", "Inglés IV" ],
+      "Regular - nivel 5":["Métodos numéricos", "Matemáticas especiales", "Física de ondas", "Estadística inferencial", "Inglés V"],
+      "Regular - nivel 6":["Empresas y sociedad", "Inglés VI"],
+      "Regular - nivel 7":["Sostenibilidad ambiental", "Inglés VII"],
+      "Regular - nivel 8":["Inglés VIII"]
+    };
+    let datosGuardados=[],consolidadoDatos=[];
+
+    function mostrarSeccion(id){
+      document.getElementById('formulario').style.display=(id==='formulario')?'block':'none';
+      document.getElementById('tablaGuardados').style.display=(id==='formulario')?'table':'none';
+      document.getElementById('segundaSeccion').style.display=(id==='segundaSeccion')?'block':'none';
+    }
+    function pedirPasswordConsolidado() {
+     const pwd = prompt("Contraseña consolidado:");
+     if (pwd === "12345678") {
+     cargarConsolidadoOnline((lista) => {
+     consolidadoDatos = lista;
+     renderConsolidado();
+     mostrarSeccion('segundaSeccion');
+     });
+     } else {
+     alert("Clave incorrecta");
+    }
+  }
+    function validarDepartamento(){
+      const sel=document.getElementById("departamento"),d=sel.value;
+      if(!d)return;
+      if(prompt(`Clave para ${d}:`)!==clavesDepartamento[d]){alert("Clave incorrecta");sel.value="";return;}
+      mostrarSeccion('formulario');document.getElementById("cuerpoTabla").innerHTML="";agregarFila();
+    }
+    function agregarFila(){
+      const d=document.getElementById("departamento").value;
+      const progs=programasPorDepto[d]||[];
+      let sp=`<select class="programaSelect"><option>-- Selecciona --</option>`;
+      progs.forEach(p=>sp+=`<option>${p}</option>`);sp+=`</select>`;
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td>${d}</td>
+        <td>${sp}</td>
+        <td>
+          <select class="semestreSelect">
+            <option>-- Selecciona --</option>
+            <option>Semestre único</option>
+            <option>Regular - nivel 2</option>
+            <option>Regular - nivel 3</option>
+            <option>Regular - nivel 4</option>
+            <option>Regular - nivel 5</option>
+            <option>Regular - nivel 6</option>
+            <option>Regular - nivel 7</option>
+            <option>Regular - nivel 8</option>
+          </select>
+        </td>
+        <td><select class="modalidadSelect"><option>-- Selecciona --</option></select></td>
+        <td><select class="asignaturaSelect"><option>-- Selecciona --</option></select></td>
+        <td>
+          <select class="diaSelect">
+            <option>-- Selecciona --</option>
+            <option>Lunes</option><option>Martes</option><option>Miércoles</option>
+            <option>Jueves</option><option>Viernes</option><option>Sábado</option>
+          </select>
+        </td>
+        <td>
+         <select class="horarioSelect"><option>-- Selecciona --</option><option>6-8 am</option><option>8-10 am</option><option>10-12 pm</option>
+         <option>12-2 pm</option><option>2-4 pm</option><option>4-6 pm</option><option>6-8 pm</option><option>8-10 pm</option>
+         </select>
+
+
+        </td>
+        <td><input type="text" placeholder="p.ej. 4 horas"></td>
+        <td><input type="text" placeholder="Nombre docente"></td>
+      `;
+      document.getElementById("cuerpoTabla").appendChild(tr);
+      const ps=tr.querySelector('.programaSelect'),
+            ms=tr.querySelector('.modalidadSelect'),
+            ss=tr.querySelector('.semestreSelect'),
+            as=tr.querySelector('.asignaturaSelect');
+      ps.onchange=()=>{
+        ms.innerHTML=`<option>-- Selecciona --</option>`;
+        (modalidadesPorPrograma[ps.value]||[]).forEach(o=>ms.appendChild(new Option(o,o)));
+      };
+      ss.onchange=()=>{
+        as.innerHTML=`<option>-- Selecciona --</option>`;
+        (asignaturasPorSemestre[ss.value]||[]).forEach(o=>as.appendChild(new Option(o,o)));
+      };
+    }
+    function guardarDatos(){
+      datosGuardados=[];const body=document.querySelector("#tablaGuardados tbody");body.innerHTML="";
+      document.querySelectorAll("#cuerpoTabla tr").forEach(f=>{
+        const vals=Array.from(f.cells).map(td=>{
+          const s=td.querySelector("select"),i=td.querySelector("input");
+          return s?s.value:i?i.value:td.textContent;
+        });
+        if(vals.some(v=>v)){
+          datosGuardados.push(vals);
+          const tr=document.createElement("tr");
+          vals.forEach(v=>tr.appendChild(Object.assign(document.createElement("td"),{textContent:v})));
+          const tdAcc=document.createElement("td");
+          const btn=document.createElement("button");
+          btn.textContent="✖";btn.classList.add("btnEliminar");btn.onclick=()=>tr.remove();
+          tdAcc.appendChild(btn);tr.appendChild(tdAcc);
+          body.appendChild(tr);
+        }
+      });
+      document.getElementById("tablaGuardados").style.display="table";
+      document.getElementById("btnFinalizar").disabled=false;
+    }
+    async function finalizarGuardado() {
+     const ts    = new Date().toLocaleString();
+     const filas = datosGuardados.map(r => [...r, ts]);
+     consolidadoDatos = consolidadoDatos.concat(filas);
+
+     try {
+     await enviarAlServidor(filas);
+     } catch (e) {
+     console.error(e);
+     alert('Error enviando a la hoja. Revisa la consola.');
+     }
+
+     // limpiamos el formulario…
+      document.getElementById('cuerpoTabla').innerHTML = '';
+     document.getElementById('tablaGuardados').style.display = 'none';
+     document.getElementById('departamento').value = '';
+     document.getElementById('btnFinalizar').disabled = true;
+
+     alert('Datos enviados al consolidado.');
+}
+    function renderConsolidado(){
+      const body=document.getElementById("cuerpoConsolidado");body.innerHTML="";
+      consolidadoDatos.forEach(vals=>{
+        const tr=document.createElement("tr");
+        vals.forEach(v=>tr.appendChild(Object.assign(document.createElement("td"),{textContent:v})));
+        body.appendChild(tr);
+      });
+    }
+    function filtrar(col){
+      const term=document.querySelectorAll('#filtros input')[col].value.toLowerCase();
+      document.querySelectorAll('#tablaConsolidado tbody tr').forEach(tr=>{
+        const txt=tr.cells[col].textContent.toLowerCase();
+        tr.style.display = txt.includes(term) ? '' : 'none';
+      });
+    }
+    function exportTableToExcel(tableID,filename=''){
+      const t=document.getElementById(tableID),csv=[];
+      for(let r of t.rows){
+        csv.push(Array.from(r.cells).map(td=>`"${td.innerText.replace(/"/g,'""')}"`).join(','));
+      }
+      const BOM = '\uFEFF'; // Marca para que Excel entienda UTF-8
+      const blob = new Blob([BOM + csv.join('\n')], {type: 'text/csv;charset=utf-8;'});
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+      a.download=filename?`${filename}.xls`:'export.xls';a.click();
+      URL.revokeObjectURL(a.href);
+    }
+  </script>
+</body>
+</html>
+<!-- Fin del código HTML -->
