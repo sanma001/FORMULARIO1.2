@@ -281,7 +281,8 @@
       "Regular - nivel 7":["Sostenibilidad ambiental", "Inglés VII"],
       "Regular - nivel 8":["Inglés VIII"]
     };
-    let datosGuardados=[],consolidadoDatos=[];
+    let datosGuardados=[];
+    let consolidadoDatos=[];
 
     function mostrarSeccion(id){
       document.getElementById('formulario').style.display=(id==='formulario')?'block':'none';
@@ -372,41 +373,37 @@
         (asignaturasPorSemestre[ss.value]||[]).forEach(o=>as.appendChild(new Option(o,o)));
       };
     }
+
+    
     function guardarDatos() {
+     // Reiniciar lista de datos guardados
      datosGuardados = [];
-     const body = document.querySelector("#tablaGuardados tbody");
-     body.innerHTML = "";
+       const body = document.querySelector("#tablaGuardados tbody");
+       body.innerHTML = "";
 
-     document.querySelectorAll("#cuerpoTabla tr").forEach(fila => {
-       // Recorremos cada celda y extraemos valor según su tipo
+       // Recorremos cada fila del formulario
+       document.querySelectorAll("#cuerpoTabla tr").forEach(fila => {
+       // Extraemos valores según tipo de campo
        const vals = Array.from(fila.cells).map(td => {
-       // select (programa, modalidad, tipo grupo…)
-       const sel = td.querySelector("select");
-       if (sel) return sel.value;
+        const sel = td.querySelector("select");
+        if (sel) return sel.value;
 
-       // input fecha (fecha inicial o final)
        const dateInp = td.querySelector("input[type='date']");
-       if (dateInp) return dateInp.value;
+        if (dateInp) return dateInp.value;
 
-       // input texto (intensidad, docente…)
-       const txtInp = td.querySelector("input[type='text']");
+        const txtInp = td.querySelector("input[type='text']");
        if (txtInp) return txtInp.value;
 
-       // input archivo
        const fileInp = td.querySelector("input[type='file']");
-       if (fileInp) {
-        return fileInp.files[0] ? fileInp.files[0].name : "";
-       }
+       if (fileInp) return fileInp.files[0] ? fileInp.files[0].name : "";
 
-       // fallback: cualquier otro texto en la celda
        return td.textContent.trim();
-     });
+    });
 
-     // Solo guardamos filas con al menos un valor
-     if (vals.some(v => v)) {
+    // Solo si hay al menos un dato en la fila
+    if (vals.some(v => v)) {
       datosGuardados.push(vals);
 
-      // También las mostramos en la tabla de "Datos guardados"
       const tr = document.createElement("tr");
       vals.forEach(v => {
         const td = document.createElement("td");
@@ -414,7 +411,6 @@
         tr.appendChild(td);
       });
 
-      // Botón para eliminar esa fila
       const tdAcc = document.createElement("td");
       const btn = document.createElement("button");
       btn.textContent = "✖";
@@ -427,100 +423,123 @@
     }
   });
 
+  // Mostrar la tabla y activar botón finalizar
   document.getElementById("tablaGuardados").style.display = "table";
   document.getElementById("btnFinalizar").disabled = false;
 }
 
 
      async function finalizarGuardado() {
-       const ts = new Date().toLocaleString();
-
-      // 1) Recolectamos cada fila del formulario
-      const filas = await Promise.all(
-       Array.from(document.querySelectorAll('#cuerpoTabla tr')).map(async tr => {
+     const ts = new Date().toLocaleString();
+ 
+     // 1) Recolectamos cada fila del formulario
+     const filas = await Promise.all(
+       Array.from(document.querySelectorAll('#tablaGuardados tbody tr')).map(async tr => {
          const vals = [];
-
-         // 2) Para cada celda de la fila, extraemos su valor
+ 
          for (const td of tr.cells) {
-         // select
-         const sel = td.querySelector('select');
-         if (sel) {
-          vals.push(sel.value);
-          continue;
-        }
+           const sel = td.querySelector('select');
+           if (sel) {
+             vals.push(sel.value);
+             continue;
+           }
+ 
+           const dateInp = td.querySelector('input[type="date"]');
+           if (dateInp) {
+             vals.push(dateInp.value);
+             continue;
+           }
+ 
+           const txtInp = td.querySelector('input[type="text"]');
+           if (txtInp) {
+             vals.push(txtInp.value);
+             continue;
+           }
+ 
+           const fileInp = td.querySelector('input[type="file"]');
+           if (fileInp) {
+             if (fileInp.files[0]) {
+               const file = fileInp.files[0];
+               const dataURL = await new Promise(res => {
+                 const reader = new FileReader();
+                 reader.onload = e => res(e.target.result);
+                 reader.readAsDataURL(file);
+               });
+               vals.push({ name: file.name, data: dataURL });
+             } else {
+               vals.push('');
+             }
+             continue;
+           }
+ 
+           vals.push(td.textContent.trim());
+         }
+ 
+         vals.push(ts);
+         return vals;
+       })
+     );
+ 
+     // 2) Guardamos localmente en consolidadoDatos
+     if (!window.consolidadoDatos) {
+       window.consolidadoDatos = []; // Asegurar que existe globalmente
+     }
+ 
+     consolidadoDatos = consolidadoDatos.concat(filas);
+     console.log("Filas guardadas:", filas); // <-- Depuración
+ 
+     // 3) Enviamos al servidor
+     try {
+       await enviarAlServidor(filas);
+     } catch (e) {
+       console.error('Error enviando a la hoja:', e);
+       alert('Error enviando a la hoja. Revisa la consola.');
+     }
+ 
+     // 4) Limpiamos el formulario
+     document.getElementById('cuerpoTabla').innerHTML = '';
+     document.getElementById('tablaGuardados').style.display = 'none';
+     document.getElementById('departamento').value = '';
+     document.getElementById('btnFinalizar').disabled = true;
+ 
+     // 5) Renderizamos el consolidado directamente
+     renderConsolidado();
+     mostrarSeccion('segundaSeccion');
+     // Si deseas volver a usar cargarConsolidadoOnline más adelante:
+     // cargarConsolidadoOnline(lista => {
+     //   consolidadoDatos = lista;
+     // });
+   
+     // 6) Confirmación al usuario
+     alert('Datos enviados al consolidado.');
+   }
 
-        // input date
-        const dateInp = td.querySelector('input[type="date"]');
-        if (dateInp) {
-          vals.push(dateInp.value);
-          continue;
-        }
 
-        // input text
-        const txtInp = td.querySelector('input[type="text"]');
-        if (txtInp) {
-          vals.push(txtInp.value);
-          continue;
-        }
 
-        // input file: convertimos a Base64
-        const fileInp = td.querySelector('input[type="file"]');
-        if (fileInp) {
-          if (fileInp.files[0]) {
-            const file = fileInp.files[0];
-            const dataURL = await new Promise(res => {
-              const reader = new FileReader();
-              reader.onload = e => res(e.target.result);
-              reader.readAsDataURL(file);
-            });
-            vals.push({ name: file.name, data: dataURL });
-          } else {
-            vals.push('');
-          }
-          continue;
-        }
+    function renderConsolidado() {
+   const body = document.getElementById("cuerpoConsolidado");
+   body.innerHTML = "";
 
-        // fallback: texto plano
-        vals.push(td.textContent.trim());
+   consolidadoDatos.forEach(vals => {
+    const tr = document.createElement("tr");
+    vals.forEach((v, idx) => {
+      const td = document.createElement("td");
+      // Suponiendo que el archivo es la penúltima o última columna:
+      // detectamos si v es una URL de Drive
+      if (typeof v === 'string' && v.startsWith('https://')) {
+        const a = document.createElement("a");
+        a.href = v;
+        a.target = "_blank";
+        a.textContent = "Ver archivo";
+        td.appendChild(a);
+      } else {
+        td.textContent = v;
       }
-
-      // 3) Añadimos la marca de tiempo al final
-      vals.push(ts);
-      return vals;
-    })
-  );
-
-   // 4) Guardamos local y en consolidadoDatos
-   consolidadoDatos = consolidadoDatos.concat(filas);
-
-   // 5) Enviamos al servidor
-   try {
-    await enviarAlServidor(filas);
-  } catch (e) {
-    console.error('Error enviando a la hoja:', e);
-    alert('Error enviando a la hoja. Revisa la consola.');
-  }
-
-  // 6) Limpiamos el formulario
-  document.getElementById('cuerpoTabla').innerHTML = '';
-  document.getElementById('tablaGuardados').style.display = 'none';
-  document.getElementById('departamento').value = '';
-  document.getElementById('btnFinalizar').disabled = true;
-
-  // 7) Confirmación al usuario
-  alert('Datos enviados al consolidado.');
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
 }
-
-
-
-    function renderConsolidado(){
-      const body=document.getElementById("cuerpoConsolidado");body.innerHTML="";
-      consolidadoDatos.forEach(vals=>{
-        const tr=document.createElement("tr");
-        vals.forEach(v=>tr.appendChild(Object.assign(document.createElement("td"),{textContent:v})));
-        body.appendChild(tr);
-      });
-    }
     function filtrar(col){
       const term=document.querySelectorAll('#filtros input')[col].value.toLowerCase();
       document.querySelectorAll('#tablaConsolidado tbody tr').forEach(tr=>{
