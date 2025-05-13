@@ -168,34 +168,45 @@
   </div>
 <!-- Apps Script: lectura/escritura en Google Sheets -->
 <script>
- // URL de tu Apps Script desplegado
- const SHEET_URL = 'https://script.google.com/macros/s/AKfycbyKR3fYsuDaEa3-P3rk1CiiU1aywtCzsRlIdJ5FPCzgs2F9_ubzQGLhEpQLMvRie5cc/exec';
+  // URL de tu Apps Script desplegado
+  const SHEET_URL = 'https://script.google.com/macros/s/AKfycbyKR3fYsuDaEa3-P3rk1CiiU1aywtCzsRlIdJ5FPCzgs2F9_ubzQGLhEpQLMvRie5cc/exec';
 
- // Envía filas nuevas al Google Sheet
- window.enviarAlServidor = async (filas) => {
-  for (const fila of filas) {
-    try {
-      // Eliminamos las cabeceras para evitar preflight CORS
-      const res = await fetch(SHEET_URL, {
-        method: 'POST',
-        body: JSON.stringify(fila)
-      });
-      console.log('POST status:', res.status);
-      console.log('POST response:', await res.text());
-    } catch (err) {
-      console.error('Error en POST:', err);
+  // Envía filas nuevas al Google Sheet
+  window.enviarAlServidor = async (filas) => {
+    for (const fila of filas) {
+      try {
+        const res = await fetch(SHEET_URL, {
+          method: 'POST',
+          mode: 'cors',                         // <-- fuerza CORS
+          headers: {
+            'Content-Type': 'application/json'  // <-- indicas JSON
+          },
+          body: JSON.stringify(fila)
+        });
+        console.log('POST status:', res.status);
+        console.log('POST response:', await res.text());
+      } catch (err) {
+        console.error('Error en POST:', err);
+      }
     }
-  }
-};
+  };
 
+  // Carga todo el consolidado desde el Google Sheet
+  window.cargarConsolidadoOnline = async (callback) => {
+    try {
+      const res = await fetch(`${SHEET_URL}?cacheBust=${Date.now()}`, {
+        method: 'GET',
+        mode: 'cors',                         // <-- fuerza CORS
+        headers: { 'Accept': 'application/json' }
+      });
+      const data = await res.json();  // array de arrays
+      callback(data);
+    } catch (err) {
+      console.error('Error cargando consolidado:', err);
+    }
+  };
+</script>
 
- // Carga todo el consolidado desde el Google Sheet
- window.cargarConsolidadoOnline = async (callback) => {
-  const res = await fetch(SHEET_URL + '?cacheBust=' + Date.now());
-  const data = await res.json();  // array de arrays
-  callback(data);
- };
- </script>
   <script>
     const clavesDepartamento = {
       "MECANICA":"meca123","ELÉCTRICA":"elect789",
