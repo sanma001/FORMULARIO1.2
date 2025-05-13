@@ -290,16 +290,17 @@
       document.getElementById('segundaSeccion').style.display=(id==='segundaSeccion')?'block':'none';
     }
     function pedirPasswordConsolidado() {
-     const pwd = prompt("Contraseña consolidado:");
-     if (pwd === "12345678") {
-     cargarConsolidadoOnline((lista) => {
-     consolidadoDatos = lista;
-     renderConsolidado();
-     mostrarSeccion('segundaSeccion');
-     });
+      const pwd = prompt("Contraseña consolidado:");
+      if (pwd === "12345678") {
+         cargarConsolidadoOnline((listaOnline) => {
+         // si ya había datos locales, los mantenemos:
+         consolidadoDatos = listaOnline.concat(consolidadoDatos);
+         renderConsolidado();
+         mostrarSeccion('segundaSeccion');
+       });
      } else {
-     alert("Clave incorrecta");
-    }
+       alert("Clave incorrecta");
+     }
   }
     function validarDepartamento(){
       const sel=document.getElementById("departamento"),d=sel.value;
